@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <title>MCSR Ranked ELO Graph</title>
+  <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/minecraftia">
 <style>
-  body { background: #18181b; color: #e4e4e7; font-family: sans-serif; margin: 0; padding: 1rem; }
+  body { background: #18181b; color: #e4e4e7; font-family: "Minecraftia", sans-serif; font-size: 0.5rem; margin: 0; padding: 1rem; }
   h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
   .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
   input { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.9rem; }
@@ -36,7 +37,7 @@ function getTierColor(elo) {
   return 'rgb(170, 170, 170)';                   // Coal (0-600)
 }
 
-async function fetchAllRankedMatches(username, uuid, season) {
+async function fetchAllRankedMatches(username, uuid, season, currentElo) {
   const status = document.getElementById('status');
   let allMatches = [];
   let beforeId = null;
@@ -65,6 +66,15 @@ async function fetchAllRankedMatches(username, uuid, season) {
   }
 
   allMatches.sort((a, b) => a.date - b.date);
+
+  // If current ELO differs from last match, append it as a synthetic final point
+  if (currentElo != null && allMatches.length > 0) {
+    const lastElo = allMatches[allMatches.length - 1].elo;
+    if (currentElo !== lastElo) {
+      allMatches.push({ id: null, date: allMatches[allMatches.length - 1].date + 1, elo: currentElo });
+    }
+  }
+
   return allMatches;
 }
 
@@ -83,7 +93,8 @@ async function loadData() {
     if (!userData.data) { status.textContent = 'User not found.'; return; }
     const uuid = userData.data.uuid;
 
-    const matches = await fetchAllRankedMatches(username, uuid, season);
+    const currentElo = userData.data.eloRate;
+    const matches = await fetchAllRankedMatches(username, uuid, season, currentElo);
     if (matches.length === 0) { status.textContent = 'No ranked ELO data found.'; return; }
 
     status.textContent = `${matches.length} ranked matches loaded (season ${season}).`;
@@ -228,7 +239,8 @@ function drawGraph(data, username, season) {
     text.setAttribute('x', 2);
     text.setAttribute('y', y + 4);
     text.setAttribute('text-anchor', 'start');
-    text.setAttribute('font-size', '10');
+    text.setAttribute('font-size', '7');
+    text.setAttribute('font-family', 'Minecraftia, sans-serif');
     text.setAttribute('fill', getTierColor(tl.elo));
     text.textContent = tl.label;
     svg.appendChild(text);
