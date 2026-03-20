@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MCSR Badges</title>
+<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/minecraftia">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #18181b; color: #e4e4e7; font-family: "Minecraftia", monospace; font-size: 0.6rem; padding: 1rem; }
+  .badges { display: flex; flex-direction: row; gap: 0.5rem; overflow-x: auto; }
+  .badge img { width: 3rem; height: 3rem; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<div id="root">Loading...</div>
+<script>
+const params = new URLSearchParams(window.location.search);
+const USERNAME = params.get('user') || 'bombsan';
+const BASE = 'https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/';
+
+// Map API achievement IDs to wiki image filenames and display names
+const ACHIEVEMENT_MAP = {
+  // Leveled achievements - id + level -> filename
+  bestTime:         { name: 'Break the Barrier', file: (lvl) => `break_the_barrier_level_${lvl}.png` },
+  highestWinStreak: { name: 'Consistent Wins',   file: (lvl) => `consistent_wins_level_${lvl}.png` },
+  playedMatches:    { name: 'Match Master',       file: (lvl) => `match_master_level_${lvl}.png` },
+  playtime:         { name: 'Practice Makes Perfect', file: (lvl) => `practice_makes_perfect_level_${lvl}.png` },
+  wins:             { name: 'W Collector',        file: (lvl) => `w_collector_level_${lvl}.png` },
+  // One-time achievements
+  armorless:        { name: 'GIGACHAD',           file: () => 'gigachad.png' },
+  ironPickless:     { name: "It Isn't Iron Pick", file: () => 'it_isnt_iron_pick.png' },
+  netherite:        { name: 'Smithing Time',      file: () => 'smithing_time.png' },
+  ironHoe:          { name: 'Farming Time',       file: () => 'farming_time.png' },
+  highLevel:        { name: 'Too Many Levels',    file: () => 'too_many_levels.png' },
+  // Add others as needed
+  classic:          { name: 'Classic',            file: () => 'classic.png' },
+  neverGiveUp:      { name: 'Never Give Up',      file: () => 'never_give_up.png' },
+  valuableArtifact: { name: 'Valuable Artifact',  file: () => 'valuable_artifact.png' },
+  wrongCategory:    { name: 'Wrong Category',     file: () => 'wrong_category.png' },
+  limitedDiet:      { name: 'A Limited Diet',     file: () => 'a_limited_diet.png' },
+  youOnlyGetOneShot:{ name: 'YOGOS',              file: () => 'you_only_get_one_shot.png' },
+};
+
+function msToTime(ms) {
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function msToHours(ms) {
+  return (ms / 3600000).toFixed(1) + 'h';
+}
+
+function formatValue(id, value) {
+  if (value == null) return '';
+  if (id === 'bestTime') return msToTime(value);
+  if (id === 'playtime') return msToHours(value);
+  return value;
+}
+
+function formatGoal(id, goal) {
+  if (goal == null) return '';
+  if (id === 'bestTime') return msToTime(goal);
+  if (id === 'playtime') return msToHours(goal);
+  return goal;
+}
+
+function renderBadge(a) {
+  const info = ACHIEVEMENT_MAP[a.id];
+  if (!info) return '';
+  const filename = info.file(a.level);
+  const imgUrl = BASE + filename;
+  const tooltip = info.name + (a.level > 1 ? ` Lv ${a.level}` : '');
+  return `<div class="badge"><img src="${imgUrl}" alt="${tooltip}" title="${tooltip}"></div>`;
+}
+
+async function load() {
+  const res = await fetch(`https://mcsrranked.com/api/users/${USERNAME}`);
+  const { data } = await res.json();
+
+  const allBadges = [...data.achievements.display, ...data.achievements.total];
+  document.getElementById('root').innerHTML = `
+    <div class="badges">${allBadges.map(renderBadge).join('')}</div>
+  `;
+}
+
+load();
+</script>
+</body>
+</html>

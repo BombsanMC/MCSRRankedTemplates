@@ -18,8 +18,8 @@
 <body>
 <h1>MCSR Ranked ELO Graph</h1>
 <div class="controls">
-  <input id="username" type="text" placeholder="Username e.g. Bombsan" value="Bombsan" />
-  <input id="season" type="number" placeholder="Season" value="10" style="width:80px" />
+  <input id="username" type="text" placeholder="Username e.g. Bombsan" value="" />
+  <input id="season" type="number" placeholder="Season" value="" style="width:80px" />
   <button onclick="loadData()">Load</button>
   <span id="status"></span>
 </div>
@@ -259,6 +259,13 @@ function drawGraph(data, username, season) {
 
 
 }
+
+// Pre-populate from URL params
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  document.getElementById('username').value = p.get('user') || 'bombsan';
+  document.getElementById('season').value   = p.get('season') || '10';
+})();
 
 loadData();
 </script>
