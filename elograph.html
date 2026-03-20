@@ -263,11 +263,16 @@ function drawGraph(data, username, season) {
 // Pre-populate from URL params
 (function() {
   const p = new URLSearchParams(window.location.search);
-  document.getElementById('username').value = p.get('user') || 'bombsan';
-  document.getElementById('season').value   = p.get('season') || '10';
+
+  const user = p.get('user');
+  const season = p.get('season');
+
+  document.getElementById('username').value = user || 'bombsan';
+  document.getElementById('season').value = season || '10';
+
+  loadData();
 })();
 
-loadData();
 </script>
 </body>
 </html>
