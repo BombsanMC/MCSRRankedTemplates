@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <title>MCSR Badges</title>
 <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/minecraftia">
@@ -12,7 +10,9 @@
 </style>
 </head>
 <body>
-<div id="root">Loading...</div>
+<div id="root">
+    <div class="badges"><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/break_the_barrier_level_4.png" alt="Break the Barrier Lv 4" title="Break the Barrier Lv 4"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/gigachad.png" alt="GIGACHAD" title="GIGACHAD"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/smithing_time.png" alt="Smithing Time" title="Smithing Time"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/match_master_level_6.png" alt="Match Master Lv 6" title="Match Master Lv 6"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/too_many_levels.png" alt="Too Many Levels" title="Too Many Levels"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/it_isnt_iron_pick.png" alt="It Isn't Iron Pick" title="It Isn't Iron Pick"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/w_collector_level_5.png" alt="W Collector Lv 5" title="W Collector Lv 5"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/farming_time.png" alt="Farming Time" title="Farming Time"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/practice_makes_perfect_level_4.png" alt="Practice Makes Perfect Lv 4" title="Practice Makes Perfect Lv 4"></div><div class="badge"><img src="https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gameplay/img/achievement/consistent_wins_level_3.png" alt="Consistent Wins Lv 3" title="Consistent Wins Lv 3"></div></div>
+  </div>
 <script>
 const params = new URLSearchParams(window.location.search);
 const USERNAME = params.get('user') || 'bombsan';
@@ -21,24 +21,23 @@ const BASE = 'https://raw.githubusercontent.com/MCSR-Ranked/Wiki/main/docs/gamep
 // Map API achievement IDs to wiki image filenames and display names
 const ACHIEVEMENT_MAP = {
   // Leveled achievements - id + level -> filename
-  bestTime:         { name: 'Break the Barrier', file: (lvl) => `break_the_barrier_level_${lvl}.png` },
-  highestWinStreak: { name: 'Consistent Wins',   file: (lvl) => `consistent_wins_level_${lvl}.png` },
-  playedMatches:    { name: 'Match Master',       file: (lvl) => `match_master_level_${lvl}.png` },
-  playtime:         { name: 'Practice Makes Perfect', file: (lvl) => `practice_makes_perfect_level_${lvl}.png` },
-  wins:             { name: 'W Collector',        file: (lvl) => `w_collector_level_${lvl}.png` },
+  bestTime:         { name: 'Break the Barrier',      file: (lvl) => `break_the_barrier_level_${lvl}.png` },
+  highestWinStreak: { name: 'Consistent Wins',        file: (lvl) => `consistent_wins_level_${lvl}.png` },
+  playedMatches:    { name: 'Match Master',            file: (lvl) => `match_master_level_${lvl}.png` },
+  playtime:         { name: 'Practice Makes Perfect',  file: (lvl) => `practice_makes_perfect_level_${lvl}.png` },
+  wins:             { name: 'W Collector',             file: (lvl) => `w_collector_level_${lvl}.png` },
   // One-time achievements
-  armorless:        { name: 'GIGACHAD',           file: () => 'gigachad.png' },
-  ironPickless:     { name: "It Isn't Iron Pick", file: () => 'it_isnt_iron_pick.png' },
-  netherite:        { name: 'Smithing Time',      file: () => 'smithing_time.png' },
-  ironHoe:          { name: 'Farming Time',       file: () => 'farming_time.png' },
-  highLevel:        { name: 'Too Many Levels',    file: () => 'too_many_levels.png' },
-  // Add others as needed
-  classic:          { name: 'Classic',            file: () => 'classic.png' },
-  neverGiveUp:      { name: 'Never Give Up',      file: () => 'never_give_up.png' },
-  valuableArtifact: { name: 'Valuable Artifact',  file: () => 'valuable_artifact.png' },
-  wrongCategory:    { name: 'Wrong Category',     file: () => 'wrong_category.png' },
-  limitedDiet:      { name: 'A Limited Diet',     file: () => 'a_limited_diet.png' },
-  youOnlyGetOneShot:{ name: 'YOGOS',              file: () => 'you_only_get_one_shot.png' },
+  armorless:        { name: 'GIGACHAD',                file: () => 'gigachad.png' },
+  ironPickless:     { name: "It Isn't Iron Pick",      file: () => 'it_isnt_iron_pick.png' },
+  netherite:        { name: 'Smithing Time',           file: () => 'smithing_time.png' },
+  ironHoe:          { name: 'Farming Time',            file: () => 'farming_time.png' },
+  highLevel:        { name: 'Too Many Levels',         file: () => 'too_many_levels.png' },
+  egapHolder:       { name: 'Valuable Artifact',       file: () => 'valuable_artifact.png' },
+  classicRun:       { name: 'Classic',                 file: () => 'classic.png' },
+  overtake:         { name: 'Never. Give. Up.',        file: () => 'never_give_up.png' },
+  summonWither:     { name: 'Wrong Category',          file: () => 'wrong_category.png' },
+  foodless:         { name: 'A Limited Diet',          file: () => 'a_limited_diet.png' },
+  oneshot:          { name: 'You Only Get One Shot',   file: () => 'you_only_get_one_shot.png' },
 };
 
 function msToTime(ms) {
@@ -66,13 +65,18 @@ function formatGoal(id, goal) {
   return goal;
 }
 
+function missingBox(label) {
+  return `<div class="badge"><div style="width:3rem;height:3rem;background:#3f0000;outline:2px solid red;display:flex;align-items:center;justify-content:center;color:red;text-align:center;line-height:1.2;padding:2px;">???<br>${label}</div></div>`;
+}
+
 function renderBadge(a) {
+  if (a.id === 'seasonResult' || a.id === 'playoffsResult') return '';
   const info = ACHIEVEMENT_MAP[a.id];
-  if (!info) return '';
+  if (!info) return missingBox(a.id);
   const filename = info.file(a.level);
   const imgUrl = BASE + filename;
   const tooltip = info.name + (a.level > 1 ? ` Lv ${a.level}` : '');
-  return `<div class="badge"><img src="${imgUrl}" alt="${tooltip}" title="${tooltip}"></div>`;
+  return `<div class="badge"><img src="${imgUrl}" alt="${tooltip}" title="${tooltip}" onerror="this.parentElement.outerHTML=missingBox('${a.id}')"></div>`;
 }
 
 async function load() {
@@ -87,5 +91,6 @@ async function load() {
 
 load();
 </script>
-</body>
-</html>
+
+
+</body></html>
