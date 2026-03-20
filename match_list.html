@@ -141,7 +141,7 @@ async function loadMore() {
   const season = document.getElementById('season').value;
   document.getElementById('status').textContent = 'Fetching...';
 
-  const perPage = parseInt(document.getElementById('count').value) || 20;
+  const perPage = parseInt(document.getElementById('count').value) || 40;
   let url = `https://mcsrranked.com/api/users/${username}/matches?type=2&season=${season}&sort=newest&count=${perPage}`;
   if (beforeId) url += `&before=${beforeId}`;
 
