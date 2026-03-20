@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MCSR Ranked ELO Graph</title>
+<style>
+  body { background: #18181b; color: #e4e4e7; font-family: sans-serif; margin: 0; padding: 1rem; }
+  h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+  .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+  input { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.9rem; }
+  button { background: #3f3f46; border: none; color: #e4e4e7; padding: 0.4rem 1rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.9rem; }
+  button:hover { background: #52525b; }
+  #status { font-size: 0.85rem; color: #a1a1aa; }
+  #graph-container { width: 100%; max-width: 900px; }
+</style>
+</head>
+<body>
+<h1>MCSR Ranked ELO Graph</h1>
+<div class="controls">
+  <input id="username" type="text" placeholder="Username e.g. Bombsan" value="Bombsan" />
+  <input id="season" type="number" placeholder="Season" value="10" style="width:80px" />
+  <button onclick="loadData()">Load</button>
+  <span id="status"></span>
+</div>
+<div id="graph-container">
+  <svg id="graph" width="100%" viewBox="0 0 416 272" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<script>
+function getTierColor(elo) {
+  if (elo >= 2000) return 'rgb(168, 85, 247)';  // Netherite
+  if (elo >= 1600) return 'rgb(56, 189, 248)';   // Diamond
+  if (elo >= 1200) return 'rgb(33, 168, 59)';    // Emerald
+  if (elo >= 800)  return 'rgb(234, 179, 8)';    // Gold
+  if (elo >= 600)  return 'rgb(255, 255, 255)';  // Iron (600-800)
+  return 'rgb(170, 170, 170)';                   // Coal (0-600)
+}
+
+async function fetchAllRankedMatches(username, uuid, season) {
+  const status = document.getElementById('status');
+  let allMatches = [];
+  let beforeId = null;
+  let page = 1;
+
+  while (true) {
+    status.textContent = `Fetching page ${page} (${allMatches.length} so far)...`;
+    let url = `https://mcsrranked.com/api/users/${username}/matches?type=2&season=${season}&sort=newest&count=100`;
+    if (beforeId !== null) url += `&before=${beforeId}`;
+
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (!json.data || json.data.length === 0) break;
+
+    for (const match of json.data) {
+      const change = match.changes?.find(c => c.uuid === uuid);
+      if (change && change.eloRate != null) {
+        allMatches.push({ id: match.id, date: match.date, elo: change.eloRate });
+      }
+    }
+
+    if (json.data.length < 100) break;
+    beforeId = json.data[json.data.length - 1].id;
+    page++;
+  }
+
+  allMatches.sort((a, b) => a.date - b.date);
+  return allMatches;
+}
+
+async function loadData() {
+  const username = document.getElementById('username').value.trim();
+  const season = document.getElementById('season').value.trim();
+  const status = document.getElementById('status');
+  if (!username) return;
+
+  status.textContent = 'Looking up user...';
+  document.getElementById('graph').innerHTML = '';
+
+  try {
+    const userRes = await fetch(`https://mcsrranked.com/api/users/${username}`);
+    const userData = await userRes.json();
+    if (!userData.data) { status.textContent = 'User not found.'; return; }
+    const uuid = userData.data.uuid;
+
+    const matches = await fetchAllRankedMatches(username, uuid, season);
+    if (matches.length === 0) { status.textContent = 'No ranked ELO data found.'; return; }
+
+    status.textContent = `${matches.length} ranked matches loaded (season ${season}).`;
+    drawGraph(matches, username, season);
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+    console.error(e);
+  }
+}
+
+function drawGraph(data, username, season) {
+  const svg = document.getElementById('graph');
+  svg.innerHTML = '';
+
+  const W = 416, H = 272;
+  const n = data.length;
+  const elos = data.map(d => d.elo);
+  const peak = Math.max(...elos);
+
+  // Y axis: multiples of 200
+  const minElo = Math.floor((Math.min(...elos) - 50) / 200) * 200;
+  const maxElo = Math.ceil((peak + 50) / 200) * 200;
+
+  // X axis: evenly spaced by match index
+  const xScale = i => (i / (n - 1)) * W;
+  const yScale = elo => H - ((elo - minElo) / (maxElo - minElo)) * H;
+
+  // Tier background bands
+  const tiers = [
+    { min: 0,    max: 600,  color: 'rgb(170,170,170)' },  // Coal
+    { min: 600,  max: 800,  color: 'rgb(255,255,255)' },  // Iron
+    { min: 800,  max: 1200, color: 'rgb(234,179,8)' },    // Gold
+    { min: 1200, max: 1600, color: 'rgb(33,168,59)' },    // Emerald
+    { min: 1600, max: 2000, color: 'rgb(56,189,248)' },   // Diamond
+    { min: 2000, max: 9999, color: 'rgb(168,85,247)' },   // Netherite
+  ];
+  for (const tier of tiers) {
+    const yTop = yScale(Math.min(tier.max, maxElo));
+    const yBot = yScale(Math.max(tier.min, minElo));
+    if (yBot > yTop) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', 0);
+      rect.setAttribute('y', yTop);
+      rect.setAttribute('width', W);
+      rect.setAttribute('height', yBot - yTop);
+      rect.setAttribute('fill', tier.color);
+      rect.setAttribute('opacity', '0.08');
+      svg.appendChild(rect);
+    }
+  }
+
+  // Grid lines
+  for (let elo = minElo; elo <= maxElo; elo += 200) {
+    const y = yScale(elo);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', 1); line.setAttribute('x2', W);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+  // Extra grid lines every 100
+  for (let elo = minElo; elo <= maxElo; elo += 100) {
+    if (elo % 200 === 0) continue;
+    const y = yScale(elo);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', 1); line.setAttribute('x2', W);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+
+  // Filled area under line (dark background fill)
+  let fillPath = `M${xScale(0)},0L${xScale(0)},${yScale(data[0].elo)}`;
+  for (let i = 1; i < n; i++) {
+    fillPath += `L${xScale(i)},${yScale(data[i].elo)}`;
+  }
+  fillPath += `L${xScale(n-1)},0Z`;
+  const fill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  fill.setAttribute('d', fillPath);
+  fill.setAttribute('fill', '#18181b');
+  fill.setAttribute('opacity', '0.9');
+  svg.appendChild(fill);
+
+  // Peak ELO dashed line
+  const peakY = yScale(peak);
+  const peakLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  peakLine.setAttribute('x1', 0); peakLine.setAttribute('x2', W);
+  peakLine.setAttribute('y1', peakY); peakLine.setAttribute('y2', peakY);
+  peakLine.setAttribute('stroke', getTierColor(peak));
+  peakLine.setAttribute('stroke-width', '1');
+  peakLine.setAttribute('stroke-dasharray', '5 2');
+  peakLine.setAttribute('opacity', '0.5');
+  svg.appendChild(peakLine);
+
+  // Colored line segments
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('stroke-width', '2');
+  g.setAttribute('stroke-linecap', 'round');
+  for (let i = 1; i < n; i++) {
+    const x1 = xScale(i-1), y1 = yScale(data[i - 1].elo);
+    const x2 = xScale(i),   y2 = yScale(data[i].elo);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', getTierColor(data[i].elo));
+    g.appendChild(line);
+  }
+  svg.appendChild(g);
+
+  // Dot at the last point
+  const lastX = xScale(n-1);
+  const lastY = yScale(data[n-1].elo);
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', lastX);
+  dot.setAttribute('cy', lastY);
+  dot.setAttribute('r', '3');
+  dot.setAttribute('fill', getTierColor(data[n-1].elo));
+  svg.appendChild(dot);
+
+  // ELO labels on left
+  const tierLabels = [
+    { elo: 400, label: '400 • Coal II' },
+    { elo: 500, label: '500 • Coal III' },
+    { elo: 600, label: '600 • Iron I' },
+    { elo: 700, label: '700 • Iron II' },
+    { elo: 800, label: '800 • Iron III' },
+    { elo: 900, label: '900 • Gold I' },
+    { elo: 1000, label: '1000 • Gold II' },
+    { elo: 1100, label: '1100 • Gold III' },
+    { elo: 1200, label: '1200 • Emerald I' },
+    { elo: 1300, label: '1300 • Emerald II' },
+    { elo: 1400, label: '1400 • Emerald III' },
+    { elo: 1600, label: '1600 • Diamond I' },
+    { elo: 2000, label: '2000 • Netherite' },
+  ];
+  for (const tl of tierLabels) {
+    if (tl.elo < minElo || tl.elo > maxElo) continue;
+    const y = yScale(tl.elo);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', 2);
+    text.setAttribute('y', y + 4);
+    text.setAttribute('text-anchor', 'start');
+    text.setAttribute('font-size', '10');
+    text.setAttribute('fill', getTierColor(tl.elo));
+    text.textContent = tl.label;
+    svg.appendChild(text);
+  }
+
+  // Peak label
+  const peakLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  peakLabel.setAttribute('x', W - 2);
+  peakLabel.setAttribute('y', peakY - 3);
+  peakLabel.setAttribute('text-anchor', 'end');
+  peakLabel.setAttribute('font-size', '10');
+  peakLabel.setAttribute('fill', getTierColor(peak));
+  peakLabel.setAttribute('opacity', '0.75');
+  peakLabel.textContent = `${peak} • Peak Elo`;
+  svg.appendChild(peakLabel);
+
+
+}
+
+loadData();
+</script>
+</body>
+</html>
