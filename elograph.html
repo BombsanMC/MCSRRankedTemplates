@@ -12,7 +12,7 @@
 </head>
 <body>
 <div id="graph-container">
-  <svg id="graph" width="100%" viewBox="0 0 416 272" xmlns="http://www.w3.org/2000/svg"></svg>
+  <svg id="graph" width="100%" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
 
 <script>
@@ -102,7 +102,7 @@ function drawGraph(data) {
   const svg = document.getElementById('graph');
   svg.innerHTML = '';
 
-  const W = 416, H = 272;
+  const W = 600, H = 300;
   const n = data.length;
   const elos = data.map(d => d.elo);
   const peak = Math.max(...elos);
