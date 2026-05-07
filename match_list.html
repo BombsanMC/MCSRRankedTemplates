@@ -7,10 +7,6 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #18181b; color: #e4e4e7; font-family: "Minecraftia", monospace; font-size: 0.6rem; padding: 1rem; }
-  .controls { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center; }
-  input, select { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-family: inherit; font-size: 0.6rem; }
-  button { background: #3f3f46; border: none; color: #e4e4e7; padding: 0.3rem 0.8rem; border-radius: 0.4rem; cursor: pointer; font-family: inherit; font-size: 0.6rem; }
-  button:hover { background: #52525b; }
   .summary { color: rgba(255,255,255,0.4); margin-bottom: 0.5rem; }
   .match { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 0.4rem; }
   .match:hover { background: #27272a; }
@@ -22,31 +18,29 @@
   .lost { color: #f87171; }
   .draw { color: #60a5fa; }
   .time { width: 4rem; text-align: center; color: rgba(255,255,255,0.5); }
-  .time.fast { color: rgba(255,255,255,0.8); }
-  .time.loss-time { color: #7f1d1d; }
-  .time.forfeit { color: rgba(255,255,255,0.25); }
+  .time.fast       { color: rgba(255,255,255,0.8); }
+  .time.loss-time  { color: #7f1d1d; }
+  .time.forfeit    { color: rgba(255,255,255,0.25); }
   .age  { width: 3rem; text-align: right; color: rgba(255,255,255,0.35); }
-  .seed-type { width: 1.5rem; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  .load-more { margin-top: 0.75rem; width: 100%; }
-  #status { color: rgba(255,255,255,0.4); }
+  .seed-type { width: 1.5rem; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .load-more { margin-top: 0.75rem; width: 100%; background: #3f3f46; border: none; color: #e4e4e7; padding: 0.3rem 0.8rem; border-radius: 0.4rem; cursor: pointer; font-family: inherit; font-size: 0.6rem; }
+  .load-more:hover { background: #52525b; }
 </style>
 </head>
 <body>
-<div class="controls">
-  <input id="username" value="" placeholder="Username">
-  <input id="season" type="number" value="" style="width:60px" placeholder="Season">
-  <input id="count" type="number" value="" style="width:60px" placeholder="Per page">
-  <button onclick="init()">Load</button>
-  <span id="status"></span>
-</div>
 <div id="summary" class="summary"></div>
 <div id="list"></div>
 <button class="load-more" id="loadmore" onclick="loadMore()" style="display:none">Load more</button>
 
 <script>
-let uuid = null;
-let beforeId = null;
-let allMatches = [];
+const params   = new URLSearchParams(window.location.search);
+const USERNAME = params.get('user')   || 'bombsan';
+const SEASON   = params.get('season') || '11';
+const PER_PAGE = parseInt(params.get('count')) || 40;
+
+let uuid      = null;
+let beforeId  = null;
+let totalShown = 0;
 
 function msToTime(ms) {
   if (!ms) return '';
@@ -58,18 +52,18 @@ function msToTime(ms) {
 
 function timeAgo(ts) {
   const diff = Math.floor(Date.now() / 1000) - ts;
-  if (diff < 3600) return `${Math.floor(diff/60)}m`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h`;
-  return `${Math.floor(diff/86400)}d`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
 }
 
 const SPRITE = 'https://mcsrranked.com/_app/immutable/assets/structure_icons.CRkl45IK.png';
 const SEED_ICONS = {
-  VILLAGE:          '0rem 0rem',
-  BURIED_TREASURE:  '-1rem 0rem',
-  SHIPWRECK:        '-2rem 0rem',
-  DESERT_TEMPLE:    '-3rem 0rem',
-  RUINED_PORTAL:    '0rem -1rem',
+  VILLAGE:         '0rem 0rem',
+  BURIED_TREASURE: '-1rem 0rem',
+  SHIPWRECK:       '-2rem 0rem',
+  DESERT_TEMPLE:   '-3rem 0rem',
+  RUINED_PORTAL:   '0rem -1rem',
 };
 
 function seedIcon(overworld) {
@@ -86,93 +80,68 @@ function seedIcon(overworld) {
   "></div>`;
 }
 
-function renderMatch(m, myUuid) {
-  const opponent = m.players.find(p => p.uuid !== myUuid);
-  const myChange = m.changes?.find(c => c.uuid === myUuid);
-  const won = m.result?.uuid === myUuid;
-  const draw = !m.result?.uuid;
-  const isForfeit = m.forfeited;
+function renderMatch(m) {
+  const opponent = m.players.find(p => p.uuid !== uuid);
+  const won      = m.result?.uuid === uuid;
+  const draw     = !m.result?.uuid;
   const resultClass = draw ? 'draw' : won ? 'won' : 'lost';
-  const resultText = draw ? 'draw' : won ? 'won' : 'lost';
+  const resultText  = draw ? 'draw' : won ? 'won' : 'lost';
+
   let timeDisplay, timeClass;
-  if (isForfeit || draw) {
+  if (m.forfeited || draw) {
     timeDisplay = 'forfeit';
-    timeClass = 'forfeit';
+    timeClass   = 'forfeit';
   } else if (won) {
     timeDisplay = msToTime(m.result?.time);
-    timeClass = 'fast';
+    timeClass   = 'fast';
   } else {
     timeDisplay = msToTime(m.result?.time);
-    timeClass = 'loss-time';
+    timeClass   = 'loss-time';
   }
-  const icon = seedIcon(m.seed?.overworld);
+
   return `<div class="match">
     <div class="opponent"><a href="https://mcsrranked.com/stats/${opponent?.nickname}" target="_blank">${opponent?.nickname ?? '—'}</a></div>
     <div class="result ${resultClass}">${resultText}</div>
     <div class="time ${timeClass}">${timeDisplay}</div>
-    <div class="seed-type">${icon}</div>
+    <div class="seed-type">${seedIcon(m.seed?.overworld)}</div>
     <div class="age">${timeAgo(m.date)}</div>
   </div>`;
 }
 
-async function init() {
-  const username = document.getElementById('username').value.trim();
-  allMatches = [];
-  beforeId = null;
-  document.getElementById('list').innerHTML = '';
-  document.getElementById('loadmore').style.display = 'none';
-  document.getElementById('status').textContent = 'Loading...';
-
-  const res = await fetch(`https://mcsrranked.com/api/users/${username}`);
-  const { data } = await res.json();
-  uuid = data.uuid;
-
-  const s = data.statistics.season;
-  const wins = s.wins.ranked, losses = s.loses.ranked;
-  const draws = s.playedMatches.ranked - wins - losses - s.forfeits.ranked;
-  document.getElementById('summary').textContent =
-    `${s.playedMatches.ranked} matches • ${wins}W ${losses}L ${draws}D`;
-
-  await loadMore();
-}
-
 async function loadMore() {
-  const username = document.getElementById('username').value.trim();
-  const season = document.getElementById('season').value;
-  document.getElementById('status').textContent = 'Fetching...';
-
-  const perPage = parseInt(document.getElementById('count').value) || 40;
-  let url = `https://mcsrranked.com/api/users/${username}/matches?type=2&season=${season}&sort=newest&count=${perPage}`;
+  let url = `https://mcsrranked.com/api/users/${USERNAME}/matches?type=2&season=${SEASON}&sort=newest&count=${PER_PAGE}`;
   if (beforeId) url += `&before=${beforeId}`;
 
-  const res = await fetch(url);
-  const { data } = await res.json();
+  const res        = await fetch(url);
+  const { data }   = await res.json();
 
   if (!data || data.length === 0) {
-    document.getElementById('status').textContent = 'No more matches.';
     document.getElementById('loadmore').style.display = 'none';
     return;
   }
 
-  allMatches = allMatches.concat(data);
-  document.getElementById('list').innerHTML += data.map(m => renderMatch(m, uuid)).join('');
-  document.getElementById('status').textContent = `${allMatches.length} matches shown`;
-  document.getElementById('loadmore').style.display = data.length === perPage ? 'block' : 'none';
+  totalShown += data.length;
+  document.getElementById('list').innerHTML += data.map(renderMatch).join('');
+  document.getElementById('loadmore').style.display = data.length === PER_PAGE ? 'block' : 'none';
   beforeId = data[data.length - 1].id;
 }
 
-// Pre-populate from URL params
-(function() {
-  const p = new URLSearchParams(window.location.search);
-  if (p.get('user'))   document.getElementById('username').value = p.get('user');
-  else                 document.getElementById('username').value = 'bombsan';
-  if (p.get('season')) document.getElementById('season').value = p.get('season');
-  else                 document.getElementById('season').value = '10';
-  if (p.get('count'))  document.getElementById('count').value = p.get('count');
-  else                 document.getElementById('count').value = '40';
-})();
+(async () => {
+  const res      = await fetch(`https://mcsrranked.com/api/users/${USERNAME}`);
+  const { data } = await res.json();
+  if (!data) return;
 
-init();
+  uuid = data.uuid;
+
+  const s      = data.statistics.season;
+  const wins   = s.wins.ranked;
+  const losses = s.loses.ranked;
+  const draws  = s.playedMatches.ranked - wins - losses - s.forfeits.ranked;
+  document.getElementById('summary').textContent =
+    `${s.playedMatches.ranked} matches • ${wins}W ${losses}L ${draws}D`;
+
+  await loadMore();
+})();
 </script>
 </body>
 </html>
