@@ -20,7 +20,6 @@ const params = new URLSearchParams(window.location.search);
 const USERNAME = params.get('username') || 'bombsan';
 const SEASON   = params.get('season')   || '11';
 
-// ── Single source of truth for all tier data ──────────────────────────────────
 const TIERS = [
   { elo:    0, label: 'Coal I',      tier: 'Coal',      color: '#AAAAAA' },
   { elo:  400, label: 'Coal II',     tier: 'Coal',      color: '#AAAAAA' },
